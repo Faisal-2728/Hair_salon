@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: salon_db
+      MYSQL_USER: salon
+      MYSQL_PASSWORD: salonpass
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+    env_file:
+      - .env.example
+    environment:
+      - DATABASE_URL=mysql+pymysql://salon:salonpass@db:3306/salon_db
+      - FLASK_ENV=production
+      - JWT_SECRET_KEY=replace-me
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
