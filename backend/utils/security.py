@@ -144,3 +144,5 @@ def prevent_token_in_response(f):
         # This is a development reminder - actual implementation should be in the route
         return f(*args, **kwargs)
     return decorated_function
+
+  # TODO: Consider adding rate-limiting to sensitive routes for extra brute-force protection
