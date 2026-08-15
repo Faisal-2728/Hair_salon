@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api from '../../services/api'
 import { useToast } from '../../components/ui/Toast'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { formatCurrency } from '../../utils/currencyUtils'
 
 const defaultForm = { name: '', sku: '', description: '', quantity: '', threshold: '', supplier: '', cost: '' }
 
@@ -141,7 +142,7 @@ function InventoryManagement() {
                       <p className="font-semibold">{item.name}</p>
                       <p className="text-sm text-slate-500">SKU: {item.sku || '—'}</p>
                       <p className="text-sm text-slate-500">Supplier: {item.supplier || 'Unknown'}</p>
-                      <p className="text-sm text-slate-500">Cost: ${item.cost?.toFixed(2) || '0.00'}</p>
+                      <p className="text-sm text-slate-500">Cost: {formatCurrency(item.cost || 0)}</p>
                     </div>
                     <div className="text-right">
                       <p className={`text-lg font-semibold ${item.quantity <= item.threshold ? 'text-rose-600' : 'text-slate-900'}`}>{item.quantity}</p>

@@ -3,6 +3,15 @@ from config.database import db
 
 class Appointment(db.Model):
     __tablename__ = 'appointments'
+    __table_args__ = (
+        db.Index('idx_appointment_time', 'appointment_time'),
+        db.Index('idx_appointment_customer', 'customer_id'),
+        db.Index('idx_appointment_staff', 'staff_id'),
+        db.Index('idx_appointment_service', 'service_id'),
+        db.Index('idx_appointment_status', 'status'),
+        db.Index('idx_appointment_customer_time', 'customer_id', 'appointment_time'),
+        db.Index('idx_appointment_staff_time', 'staff_id', 'appointment_time'),
+    )
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     staff_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)

@@ -51,7 +51,7 @@ def _save_image_file(image_file):
     if size and size > 5 * 1024 * 1024:
         return None
     image_file.save(filepath)
-    return url_for('static', filename=f'services/{unique_name}', _external=True)
+    return f"{request.host_url.rstrip('/')}{url_for('static', filename=f'services/{unique_name}') }"
 
 
 @services_bp.route('/', methods=['GET'])
@@ -59,7 +59,11 @@ def get_services():
     search = request.args.get('q', '')
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 20))
-    query = Service.query.filter_by(active=True)
+    include_inactive = request.args.get('include_inactive', '').lower() in {'1', 'true', 'yes', 'on'}
+
+    query = Service.query
+    if not include_inactive:
+        query = query.filter_by(active=True)
     if search:
         query = query.filter(or_(Service.name.ilike(f'%{search}%'), Service.category.ilike(f'%{search}%')))
     total = query.count()

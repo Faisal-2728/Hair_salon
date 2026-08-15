@@ -4,6 +4,7 @@ from utils.auth import get_jwt_user
 from config.database import db
 from models.review import Review
 from models.service import Service
+from models.user import User
 from utils.auth import role_required
 
 reviews_bp = Blueprint('reviews', __name__)
@@ -57,6 +58,18 @@ def create_review():
     db.session.add(review)
     db.session.commit()
     return jsonify({'message': 'Review submitted', 'review': review.to_dict()}), 201
+
+
+@reviews_bp.route('/public', methods=['GET'])
+def public_reviews():
+    reviews = Review.query.order_by(Review.created_at.desc()).all()
+    review_payload = []
+    for review in reviews:
+        payload = review.to_dict()
+        user = User.query.get(review.user_id)
+        payload['user'] = user.to_dict() if user else None
+        review_payload.append(payload)
+    return jsonify({'reviews': review_payload})
 
 
 @reviews_bp.route('/all', methods=['GET'])

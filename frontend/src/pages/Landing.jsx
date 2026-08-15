@@ -3,18 +3,47 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useSelector } from 'react-redux'
 import api from '../services/api'
-import { HiMapPin, HiPhone, HiEnvelope, HiClock } from 'react-icons/hi2'
+import { HiStar } from 'react-icons/hi2'
+import { HiMapPin, HiPhone, HiEnvelope, HiClock, HiCheckCircle } from 'react-icons/hi2'
 import { FaFacebook, FaInstagram, FaTwitter, FaLinkedin } from 'react-icons/fa'
+import { createServiceImageUrl } from '../utils/imageUtils'
+import { formatCurrency } from '../utils/currencyUtils'
+import { useLanguage } from '../providers/LanguageProvider'
 
 export default function Landing() {
   const [services, setServices] = useState([])
+  const [heroAvailable, setHeroAvailable] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const [allReviewsCount, setAllReviewsCount] = useState(0)
   const auth = useSelector((state) => state.auth)
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   useEffect(() => {
     api.get('/services')
       .then((response) => setServices(response.data.services || []))
       .catch(() => setServices([]))
+
+    api.get('/reviews/public')
+      .then((response) => {
+        const reviewList = response.data.reviews || []
+        setAllReviewsCount(reviewList.length)
+        setReviews(reviewList.slice(0, 4))
+      })
+      .catch(() => {
+        setAllReviewsCount(0)
+        setReviews([])
+      })
+  }, [])
+
+  useEffect(() => {
+    // check if hero image exists in src assets
+    const url = '/src/assets/images/hero-salon.jpg'
+    fetch(url, { method: 'HEAD' })
+      .then((r) => {
+        if (r.ok) setHeroAvailable(true)
+      })
+      .catch(() => {})
   }, [])
 
   const handleBookingClick = () => {
@@ -81,11 +110,11 @@ export default function Landing() {
               </motion.div>
 
               <motion.div className="flex flex-wrap gap-4" variants={itemVariants}>
-                <button
+                  <button
                   onClick={handleBookingClick}
                   className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-violet-600 px-8 py-4 text-sm font-semibold text-white shadow-2xl shadow-violet-500/50 transition hover:shadow-violet-500/75 hover:scale-105 duration-300"
                 >
-                  {auth.user ? '🎯 Book Now' : '📅 Book Appointment'}
+                  {auth.user ? '🎯 ' + t('book_now') : '📅 ' + t('book_appointment')}
                 </button>
                 <Link
                   to="/auth/register"
@@ -116,14 +145,23 @@ export default function Landing() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-pink-600/20 rounded-3xl blur-2xl" />
-              <div className="relative h-full rounded-3xl border border-white/10 overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">💅</div>
-                  <p className="text-slate-400">Premium Salon Studio</p>
-                  <p className="text-xs text-slate-500 mt-2">Replace with hero-salon.jpg</p>
+              {heroAvailable ? (
+                <div className="absolute inset-0 rounded-3xl overflow-hidden">
+                  <div
+                    className="absolute inset-0 bg-center bg-cover"
+                    style={{ backgroundImage: `url('/src/assets/images/hero-salon.jpg')` }}
+                  />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="relative h-full rounded-3xl border border-white/10 flex items-center justify-center">
+                    <div className="text-center text-white px-6">
+                      <h2 className="text-3xl font-semibold">Premium Salon Studio</h2>
+                      <p className="text-sm mt-2 text-white/80">Style • Confidence • Class</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-pink-600/20 rounded-3xl blur-2xl" />
+              )}
             </motion.div>
           </div>
         </div>
@@ -159,15 +197,12 @@ export default function Landing() {
                 >
                   {/* Service Image */}
                   <div className="h-48 overflow-hidden bg-gradient-to-br from-violet-600/10 to-pink-600/10 relative">
-                    {service.image_url ? (
-                      <img
-                        src={service.image_url}
-                        alt={service.name}
-                        className="h-full w-full object-cover group-hover:scale-110 transition duration-300"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center text-4xl">✨</div>
-                    )}
+                    <img
+                      src={createServiceImageUrl(service)}
+                      alt={service.name}
+                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/src/assets/images/service-placeholder.jpg' }}
+                      className="h-full w-full object-cover group-hover:scale-110 transition duration-300"
+                    />
                   </div>
 
                   {/* Service Info */}
@@ -177,7 +212,7 @@ export default function Landing() {
                     <p className="text-sm text-slate-400 mb-4 line-clamp-2">{service.description || 'Professional beauty service'}</p>
 
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-2xl font-bold text-violet-400">${service.price?.toFixed(2)}</span>
+                      <span className="text-2xl font-bold text-violet-400">{formatCurrency(service.price || 0)}</span>
                       <span className="text-xs text-slate-500">{service.duration_minutes} min</span>
                     </div>
 
@@ -199,6 +234,99 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Why Choose Us Section */}
+      <section className="relative py-24 px-6 sm:px-10 bg-slate-900">
+        <div className="mx-auto max-w-7xl">
+          <motion.div className="text-center mb-16" variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+              Why Choose Us
+            </h2>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+              Experience the difference with our professional team and premium facilities
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {[
+              { icon: '👨‍💼', title: 'Expert Team', desc: 'Certified professionals with 10+ years experience' },
+              { icon: '⭐', title: 'Premium Quality', desc: 'Only the finest products and techniques' },
+              { icon: '⏱️', title: 'Quick Booking', desc: 'Easy online booking in just 2 minutes' },
+              { icon: '💎', title: 'Luxury Experience', desc: 'Premium facilities and comfort guaranteed' },
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 text-center hover:border-white/20 transition duration-300"
+                variants={itemVariants}
+                whileHover={{ y: -5 }}
+              >
+                <div className="text-5xl mb-4">{item.icon}</div>
+                <h3 className="text-xl font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-slate-400">{item.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="relative py-24 px-6 sm:px-10 bg-slate-950">
+        <div className="mx-auto max-w-7xl">
+          <motion.div className="text-center mb-16" variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+              What Our Clients Say
+            </h2>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+              Join thousands of satisfied customers who trust us for their beauty needs
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {reviews.length > 0 ? reviews.map((review, index) => (
+              <motion.div
+                key={review.id || index}
+                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:border-white/20 transition duration-300"
+                variants={itemVariants}
+              >
+                <div className="flex mb-4">
+                  {[...Array(review.rating || 0)].map((_, i) => (
+                    <HiStar key={i} className="text-yellow-400 text-lg fill-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-slate-300 mb-4">“{review.comment || 'Amazing experience at the salon.'}”</p>
+                <p className="font-semibold text-white">{review.user?.full_name || 'Valued guest'}</p>
+              </motion.div>
+            )) : (
+              <div className="md:col-span-2 lg:col-span-4 rounded-2xl border border-white/10 bg-white/5 p-6 text-slate-400">
+                No reviews yet. Be the first to share your experience.
+              </div>
+            )}
+          </motion.div>
+
+          {allReviewsCount > 4 ? (
+            <div className="mt-10 text-center">
+              <Link
+                to="/reviews"
+                className="inline-flex items-center justify-center rounded-full border border-violet-400/40 bg-violet-500/10 px-6 py-3 text-sm font-semibold text-violet-200 transition hover:bg-violet-500/20"
+              >
+                See More
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
       {/* Contact & Footer Section */}
       <section className="relative py-24 px-6 sm:px-10 bg-slate-950">
         <div className="mx-auto max-w-7xl">
@@ -211,10 +339,10 @@ export default function Landing() {
             viewport={{ once: true }}
           >
             {[
-              { icon: HiMapPin, label: 'Address', value: '123 Main Street, City Center' },
-              { icon: HiPhone, label: 'Phone', value: '(555) 123-4567' },
+              { icon: HiMapPin, label: 'Location', value: 'Kathmandu, Nepal' },
+              { icon: HiPhone, label: 'Phone', value: '9826058095' },
               { icon: HiEnvelope, label: 'Email', value: 'hello@salonstudio.com' },
-              { icon: HiClock, label: 'Hours', value: 'Mon - Sat: 9am - 8pm' },
+              { icon: HiClock, label: 'Hours', value: 'Daily: 10am - 8pm' },
             ].map((item, index) => (
               <motion.div
                 key={index}
@@ -239,17 +367,18 @@ export default function Landing() {
             <div className="grid gap-8 md:grid-cols-3 mb-8">
               {/* Brand */}
               <div>
-                <h3 className="text-xl font-bold text-white mb-2">✨ Salon Studio</h3>
-                <p className="text-slate-400">Premium beauty services for modern individuals</p>
+                <h3 className="text-xl font-bold text-white mb-2">✨ Salon Studio Kathmandu</h3>
+                <p className="text-slate-400">Premium beauty and salon services in Kathmandu, Nepal</p>
               </div>
 
               {/* Quick Links */}
               <div>
                 <h4 className="font-semibold text-white mb-4">Quick Links</h4>
                 <ul className="space-y-2 text-slate-400">
-                  <li><Link to="/" className="hover:text-violet-400 transition">Home</Link></li>
+                  <li><a href="#top" className="hover:text-violet-400 transition">Home</a></li>
                   <li><a href="#services" className="hover:text-violet-400 transition">Services</a></li>
                   <li><Link to="/auth/login" className="hover:text-violet-400 transition">Login</Link></li>
+                  <li><Link to="/auth/register" className="hover:text-violet-400 transition">Register</Link></li>
                 </ul>
               </div>
 
@@ -258,14 +387,14 @@ export default function Landing() {
                 <h4 className="font-semibold text-white mb-4">Follow Us</h4>
                 <div className="flex gap-4">
                   {[
-                    { icon: FaFacebook, label: 'Facebook' },
-                    { icon: FaInstagram, label: 'Instagram' },
-                    { icon: FaTwitter, label: 'Twitter' },
-                    { icon: FaLinkedin, label: 'LinkedIn' },
+                    { icon: FaFacebook, label: 'Facebook', href: '#' },
+                    { icon: FaInstagram, label: 'Instagram', href: '#' },
+                    { icon: FaTwitter, label: 'Twitter', href: '#' },
+                    { icon: FaLinkedin, label: 'LinkedIn', href: '#' },
                   ].map((social, index) => (
                     <a
                       key={index}
-                      href="#"
+                      href={social.href}
                       className="text-slate-400 hover:text-violet-400 transition text-lg"
                       title={social.label}
                     >
@@ -278,7 +407,8 @@ export default function Landing() {
 
             {/* Copyright */}
             <div className="border-t border-white/10 pt-8 text-center text-slate-500 text-sm">
-              <p>&copy; 2024 Salon Studio. All rights reserved. | Privacy Policy | Terms of Service</p>
+              <p>&copy; 2024 Salon Studio Kathmandu. All rights reserved. | Privacy Policy | Terms of Service</p>
+              <p className="mt-2">Based in Kathmandu, Nepal | Phone: 9826058095</p>
             </div>
           </motion.div>
         </div>

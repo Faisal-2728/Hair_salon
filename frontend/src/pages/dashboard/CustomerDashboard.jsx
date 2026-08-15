@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import api from '../../services/api'
+import FeedbackForm from '../../components/ui/FeedbackForm'
 
 function CustomerDashboard() {
   const auth = useSelector((state) => state.auth)
   const [upcoming, setUpcoming] = useState([])
+  const [reviewedAppointments, setReviewedAppointments] = useState([])
   const [history, setHistory] = useState([])
   const [loyaltyPoints, setLoyaltyPoints] = useState(0)
+  const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, cancelled: 0 })
 
   useEffect(() => {
     api.get('/customer/appointments')
@@ -21,12 +24,26 @@ function CustomerDashboard() {
           .sort((a, b) => new Date(b.appointment_time) - new Date(a.appointment_time))
         setUpcoming(upcomingItems)
         setHistory(pastItems)
+        // compute stats
+        const total = appts.length
+        const completed = appts.filter((a) => a.status === 'completed').length
+        const pending = appts.filter((a) => a.status === 'pending').length
+        const cancelled = appts.filter((a) => a.status === 'cancelled').length
+        setStats({ total, completed, pending, cancelled })
       })
       .catch(() => { setUpcoming([]); setHistory([]) })
 
     api.get('/customer/loyalty')
       .then((response) => setLoyaltyPoints(response.data.loyalty_points))
       .catch(() => setLoyaltyPoints(0))
+
+    api.get('/customer/appointments')
+      .then((response) => {
+        const appointments = response.data.appointments || []
+        const completed = appointments.filter((appointment) => appointment.status === 'completed')
+        setReviewedAppointments(completed)
+      })
+      .catch(() => setReviewedAppointments([]))
   }, [])
 
   const formatDate = (value) => {
@@ -49,6 +66,25 @@ function CustomerDashboard() {
               <p className="text-sm text-slate-300">{auth.user?.email || '–'}</p>
               <p className="text-sm text-slate-300">{auth.user?.phone || 'No phone added'}</p>
             </div>
+          </div>
+        </div>
+        {/* Stats */}
+        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="rounded-2xl bg-white/10 p-4 text-center">
+            <p className="text-sm text-slate-200">Total Appointments</p>
+            <p className="text-2xl font-bold">{stats.total}</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4 text-center">
+            <p className="text-sm text-slate-200">Completed</p>
+            <p className="text-2xl font-bold text-emerald-300">{stats.completed}</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4 text-center">
+            <p className="text-sm text-slate-200">Pending</p>
+            <p className="text-2xl font-bold text-amber-300">{stats.pending}</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4 text-center">
+            <p className="text-sm text-slate-200">Cancelled</p>
+            <p className="text-2xl font-bold text-rose-300">{stats.cancelled}</p>
           </div>
         </div>
       </section>
@@ -125,6 +161,10 @@ function CustomerDashboard() {
             <p className="mt-6 text-slate-500">You have not completed any appointments yet.</p>
           )}
         </div>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-1">
+        <FeedbackForm appointments={reviewedAppointments} />
       </section>
     </div>
   )

@@ -21,18 +21,53 @@ def _validate_status(status):
     return status if status in allowed else None
 
 
-def _check_conflict(appointment_time, staff_id, customer_id, ignore_id=None):
+def _check_conflict(appointment_time, staff_id, customer_id, service_ids=None, ignore_id=None):
+    """Check for appointment conflicts considering service duration."""
     filters = [Appointment.status != 'cancelled']
     if ignore_id:
         filters.append(Appointment.id != ignore_id)
+    
+    # Calculate total duration from all services
+    total_duration_minutes = 0
+    if service_ids:
+        services = Service.query.filter(Service.id.in_(service_ids)).all()
+        total_duration_minutes = sum(s.duration_minutes for s in services)
+    
+    end_time = appointment_time + timedelta(minutes=total_duration_minutes)
+    
+    # Check staff conflicts with duration overlap
     if staff_id:
-        staff_conflict = Appointment.query.filter(*filters, Appointment.staff_id == staff_id, Appointment.appointment_time == appointment_time).first()
-        if staff_conflict:
-            return 'Staff member is already booked at that time'
+        # Find appointments that overlap with the new time window
+        staff_conflicts = Appointment.query.filter(
+            *filters,
+            Appointment.staff_id == staff_id,
+            Appointment.appointment_time < end_time
+        ).all()
+        
+        for existing in staff_conflicts:
+            existing_service = Service.query.get(existing.service_id)
+            existing_duration = existing_service.duration_minutes if existing_service else 0
+            existing_end = existing.appointment_time + timedelta(minutes=existing_duration)
+            # Check if there's actual overlap
+            if appointment_time < existing_end:
+                return 'Staff member is already booked during this time period'
+    
+    # Check customer conflicts with duration overlap
     if customer_id:
-        customer_conflict = Appointment.query.filter(*filters, Appointment.customer_id == customer_id, Appointment.appointment_time == appointment_time).first()
-        if customer_conflict:
-            return 'Customer already has an appointment at that time'
+        customer_conflicts = Appointment.query.filter(
+            *filters,
+            Appointment.customer_id == customer_id,
+            Appointment.appointment_time < end_time
+        ).all()
+        
+        for existing in customer_conflicts:
+            existing_service = Service.query.get(existing.service_id)
+            existing_duration = existing_service.duration_minutes if existing_service else 0
+            existing_end = existing.appointment_time + timedelta(minutes=existing_duration)
+            # Check if there's actual overlap
+            if appointment_time < existing_end:
+                return 'You already have an appointment during this time period'
+    
     return None
 
 
@@ -119,7 +154,7 @@ def book_appointment():
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid service_id'}), 400
 
-    conflict = _check_conflict(appointment_time, staff_id, identity['id'])
+    conflict = _check_conflict(appointment_time, staff_id, identity['id'], service_ids=service_ids)
     if conflict:
         return jsonify({'error': conflict}), 400
 

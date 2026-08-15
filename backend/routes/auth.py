@@ -1,6 +1,6 @@
-from datetime import datetime
-from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
+from datetime import datetime, timedelta
+from flask import Blueprint, request, jsonify, current_app, make_response
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt, set_refresh_cookies, unset_jwt_cookies
 from sqlalchemy import or_, func, text
 from sqlalchemy.exc import SQLAlchemyError, OperationalError
 from werkzeug.security import check_password_hash
@@ -127,8 +127,28 @@ def login():
     normalized_identifier = identifier.strip().lower()
     try:
         user = _find_user_by_identifier(normalized_identifier)
+        
+        # Check if account is locked
+        if user and user.locked_until and user.locked_until > datetime.utcnow():
+            return jsonify({'error': 'Account is temporarily locked due to too many failed login attempts. Try again later.'}), 429
+        
+        # Reset login attempts on successful identification
+        if user and user.locked_until and user.locked_until <= datetime.utcnow():
+            user.login_attempts = 0
+            user.locked_until = None
+            db.session.commit()
+        
         if not user or not user.check_password(password):
-            return jsonify({'error': 'Invalid username or email'}), 401
+            # Increment failed login attempts
+            if user:
+                user.login_attempts = (user.login_attempts or 0) + 1
+                # Lock account after 5 failed attempts for 15 minutes
+                if user.login_attempts >= 5:
+                    user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+                    current_app.logger.warning('Account locked for user %s due to too many failed login attempts', user.email)
+                db.session.commit()
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
         if not user.is_active:
             return jsonify({'error': 'Account disabled'}), 403
         if not user.verified:
@@ -138,9 +158,17 @@ def login():
                 'email': user.email,
                 'requires_verification': True
             }), 403
+        
+        # Reset failed login attempts on successful login
+        user.login_attempts = 0
+        user.locked_until = None
+        db.session.commit()
+        
         access_token = _create_user_access_token(user)
         refresh_token = _create_user_refresh_token(user)
-        return jsonify({'access_token': access_token, 'refresh_token': refresh_token, 'user': user.to_dict()})
+        response = make_response(jsonify({'access_token': access_token, 'refresh_token': refresh_token, 'user': user.to_dict()}))
+        set_refresh_cookies(response, refresh_token)
+        return response
     except OperationalError:
         # fallback for older DB schemas that may be missing newer columns
         try:
@@ -151,7 +179,7 @@ def login():
                 return jsonify({'error': 'Invalid credentials'}), 401
             stored_hash = res.get('password_hash') if 'password_hash' in res.keys() else res[3]
             if not check_password_hash(stored_hash, password):
-                return jsonify({'error': 'Invalid username or email'}), 401
+                return jsonify({'error': 'Invalid credentials'}), 401
             user_obj = {
                 'id': res.get('id'),
                 'username': res.get('username'),
@@ -355,14 +383,16 @@ def change_password():
 def logout():
     # mark the current access token as revoked by adding its jti to the blocklist
     jti = get_jwt().get('jti')
+    from flask import current_app
     try:
-        # store in Flask app config blocklist set
-        from flask import current_app
         blocklist = current_app.config.setdefault('JWT_BLOCKLIST', set())
         blocklist.add(jti)
     except Exception:
         pass
-    return jsonify({'message': 'Logged out'}), 200
+
+    response = jsonify({'message': 'Logged out'})
+    unset_jwt_cookies(response)
+    return response, 200
 
 
 @auth_bp.route('/forgot-password', methods=['POST'])

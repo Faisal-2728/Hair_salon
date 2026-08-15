@@ -45,6 +45,10 @@ def ensure_user_columns():
         statements.append("ALTER TABLE users ADD COLUMN password_reset_expires DATETIME NULL")
     if not column_exists('password_reset_code'):
         statements.append("ALTER TABLE users ADD COLUMN password_reset_code VARCHAR(6) NULL")
+    if not column_exists('login_attempts'):
+        statements.append("ALTER TABLE users ADD COLUMN login_attempts INT DEFAULT 0")
+    if not column_exists('locked_until'):
+        statements.append("ALTER TABLE users ADD COLUMN locked_until DATETIME NULL")
 
     for stmt in statements:
         try:

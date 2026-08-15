@@ -3,9 +3,10 @@ import { motion } from 'framer-motion'
 import api from '../../services/api'
 import { useToast } from '../../components/ui/Toast'
 import { useNavigate, Link } from 'react-router-dom'
-import { HiEye, HiExclamationCircle, HiCheckCircle } from 'react-icons/hi2'
-import { FiEyeOff } from 'react-icons/fi'
+import { HiEye, HiExclamationCircle, HiCheckCircle, HiSparkles } from 'react-icons/hi2'
+import { FiEyeOff, FiUser, FiMail, FiLock, FiShield, FiZap } from 'react-icons/fi'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import salonBg from '../../assets/images/hero-salon.jpg'
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -41,7 +42,6 @@ function Register() {
       setPasswordStrength(calculatePasswordStrength(value))
     }
 
-    // Clear error for this field
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }))
     }
@@ -84,7 +84,8 @@ function Register() {
       localStorage.setItem('pending_verification_email', formData.email)
       navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}`)
     } catch (error) {
-      const message = error?.response?.data?.error || 'Registration failed. Please try again.'
+      console.error('Registration failed', error)
+      const message = error?.response?.data?.error || error?.response?.data?.details || error?.message || 'Registration failed. Please try again.'
       showToast(message, { variant: 'error' })
     } finally {
       setLoading(false)
@@ -93,278 +94,191 @@ function Register() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.5 } },
+    visible: { opacity: 1, transition: { duration: 0.45 } },
   }
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.2 } },
+    hidden: { opacity: 0, y: 24 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.15 } },
   }
 
   const inputVariants = {
-    hidden: { opacity: 0, x: -10 },
+    hidden: { opacity: 0, x: -12 },
     visible: { opacity: 1, x: 0 },
   }
 
-  const strengthColors = ['bg-red-500/20', 'bg-orange-500/20', 'bg-yellow-500/20', 'bg-green-500/20']
   const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong']
   const strengthLabelColors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-green-400']
 
   return (
-    <motion.div
-      className="min-h-[calc(100vh-6rem)] relative overflow-hidden px-4 py-12"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Premium Background */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(88, 28, 135, 0.2) 50%, rgba(139, 92, 246, 0.2) 100%)`,
-        }}
-      >
-        <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-pink-600/20 rounded-full blur-3xl" />
-        </div>
+    <motion.div className="relative min-h-[calc(100vh-6rem)] overflow-hidden" variants={containerVariants} initial="hidden" animate="visible">
+      <div className="absolute inset-0">
+        <img src={salonBg} alt="Salon background" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 mx-auto max-w-md w-full">
-        <motion.div variants={cardVariants} initial="hidden" animate="visible">
-          {/* Header */}
-          <div className="mb-8 text-center">
-            <motion.h1
-              className="text-4xl font-bold text-white mb-2"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              Create Account
-            </motion.h1>
-            <motion.p
-              className="text-slate-300"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              Join our premium salon community
-            </motion.p>
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-6rem)] max-w-7xl items-center px-4 py-10 sm:px-6 lg:px-8">
+        <div className="absolute inset-x-0 top-8 flex justify-center">
+          <div className="rounded-full border border-[#D4AF37]/25 bg-black/30 px-4 py-2 text-xs uppercase tracking-[0.35em] text-[#F8E3A1] shadow-[0_14px_40px_rgba(0,0,0,0.35)]">
+            Exclusive salon registration
           </div>
+        </div>
 
-          {/* Glassmorphism Card */}
-          <div className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur-2xl p-8 shadow-2xl shadow-black/20">
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              {/* Full Name */}
-              <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
-                <label className="block text-sm font-semibold text-white">Full Name</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  className={`w-full rounded-2xl border ${
-                    errors.fullName ? 'border-red-400/50' : 'border-white/20'
-                  } bg-white/10 px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition`}
-                  placeholder="Alex Morgan"
-                />
-                {errors.fullName && (
-                  <p className="text-xs text-red-400 flex items-center gap-1">
-                    <HiExclamationCircle size={14} /> {errors.fullName}
-                  </p>
-                )}
-              </motion.div>
-
-              {/* Username */}
-              <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.25 }}>
-                <label className="block text-sm font-semibold text-white">Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className={`w-full rounded-2xl border ${
-                    errors.username ? 'border-red-400/50' : 'border-white/20'
-                  } bg-white/10 px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition`}
-                  placeholder="alex.morgan"
-                />
-                {errors.username && (
-                  <p className="text-xs text-red-400 flex items-center gap-1">
-                    <HiExclamationCircle size={14} /> {errors.username}
-                  </p>
-                )}
-              </motion.div>
-
-              {/* Email */}
-              <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.3 }}>
-                <label className="block text-sm font-semibold text-white">Email Address</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`w-full rounded-2xl border ${
-                    errors.email ? 'border-red-400/50' : 'border-white/20'
-                  } bg-white/10 px-4 py-3 text-white placeholder-white/50 backdrop-blur-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition`}
-                  placeholder="alex@example.com"
-                />
-                {errors.email && (
-                  <p className="text-xs text-red-400 flex items-center gap-1">
-                    <HiExclamationCircle size={14} /> {errors.email}
-                  </p>
-                )}
-              </motion.div>
-
-              {/* Password */}
-              <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.35 }}>
-                <label className="block text-sm font-semibold text-white">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`w-full rounded-2xl border ${
-                      errors.password ? 'border-red-400/50' : 'border-white/20'
-                    } bg-white/10 px-4 py-3 pr-12 text-white placeholder-white/50 backdrop-blur-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition`}
-                    placeholder="Create a strong password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition"
-                  >
-                    {showPassword ? <FiEyeOff size={20} /> : <HiEye size={20} />}
-                  </button>
+        <div className="w-full">
+          <div className="grid gap-8 rounded-[2rem] border border-white/10 bg-black/30 p-6 shadow-[inset_0_0_60px_rgba(0,0,0,0.55)] backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr] lg:p-8">
+            <motion.div className="order-2 rounded-[1.75rem] border border-[#D4AF37]/20 bg-black/60 p-8 shadow-[0_25px_60px_rgba(0,0,0,0.45)] lg:order-1" variants={cardVariants} initial="hidden" animate="visible">
+              <div className="mb-8 space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#F8E3A1] shadow-[0_10px_30px_rgba(212,175,55,0.18)]">
+                  <HiSparkles size={18} />
+                  Create your profile
                 </div>
-                {errors.password && (
-                  <p className="text-xs text-red-400 flex items-center gap-1">
-                    <HiExclamationCircle size={14} /> {errors.password}
-                  </p>
-                )}
-                {formData.password && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-white/70">Password strength</span>
-                      <span className={`text-xs font-semibold ${strengthLabelColors[passwordStrength] || ''}`}>
-                        {strengthLabels[passwordStrength] || 'Enter password'}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          [
-                            'bg-red-500/50',
-                            'bg-orange-500/50',
-                            'bg-yellow-500/50',
-                            'bg-green-500/50',
-                          ][passwordStrength] || ''
-                        }`}
-                        style={{ width: `${((passwordStrength + 1) / 4) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Confirm Password */}
-              <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.4 }}>
-                <label className="block text-sm font-semibold text-white">Confirm Password</label>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={`w-full rounded-2xl border ${
-                      errors.confirmPassword ? 'border-red-400/50' : 'border-white/20'
-                    } bg-white/10 px-4 py-3 pr-12 text-white placeholder-white/50 backdrop-blur-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition`}
-                    placeholder="Confirm your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition"
-                  >
-                    {showConfirm ? <HiEyeOff size={20} /> : <HiEye size={20} />}
-                  </button>
+                <div>
+                  <h2 className="text-3xl font-semibold text-white">Welcome to the salon club</h2>
+                  <p className="mt-3 max-w-xl text-slate-300">Register for a refined booking journey and unlock personalized salon services.</p>
                 </div>
-                {errors.confirmPassword && (
-                  <p className="text-xs text-red-400 flex items-center gap-1">
-                    <HiExclamationCircle size={14} /> {errors.confirmPassword}
-                  </p>
-                )}
-                {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                  <p className="text-xs text-green-400 flex items-center gap-1">
-                    <HiCheckCircle size={14} /> Passwords match
-                  </p>
-                )}
-              </motion.div>
-
-              {/* Register Button */}
-              <motion.button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-2xl bg-gradient-to-r from-violet-500 to-violet-600 px-6 py-3 text-base font-semibold text-white shadow-2xl shadow-violet-500/50 hover:shadow-violet-500/75 hover:scale-105 transition disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2 mt-6"
-                variants={inputVariants}
-                initial="hidden"
-                animate="visible"
-                transition={{ delay: 0.5 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {loading ? (
-                  <>
-                    <LoadingSpinner size={18} />
-                    <span>Creating account...</span>
-                  </>
-                ) : (
-                  'Create Account'
-                )}
-              </motion.button>
-            </form>
-
-            {/* Divider */}
-            <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-white/60">Already registered?</span>
-              <div className="h-px flex-1 bg-white/10" />
-            </div>
-
-            {/* Sign In Link */}
-            <motion.p
-              className="text-center text-white/80"
-              variants={inputVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ delay: 0.6 }}
-            >
-              Already have an account?{' '}
-              <Link to="/auth/login" className="font-semibold text-violet-300 hover:text-violet-200 transition">
-                Sign in
-              </Link>
-            </motion.p>
-          </div>
-
-          {/* Info Cards */}
-          <motion.div
-            className="mt-8 grid gap-4 sm:grid-cols-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-          >
-            {[
-              { title: 'OTP Secure', desc: 'Email verification' },
-              { title: 'Instant Access', desc: 'Book immediately' },
-            ].map((item, index) => (
-              <div key={index} className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-center">
-                <p className="font-semibold text-white">{item.title}</p>
-                <p className="text-xs text-slate-400 mt-1">{item.desc}</p>
               </div>
-            ))}
-          </motion.div>
-        </motion.div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 text-slate-300">
+                  <div className="mb-3 flex items-center gap-2 text-[#D4AF37]">
+                    <FiShield size={18} />
+                    <span className="font-semibold text-white">Secure onboarding</span>
+                  </div>
+                  <p className="text-sm">Every account is secured with trusted verification from the start.</p>
+                </div>
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 text-slate-300">
+                  <div className="mb-3 flex items-center gap-2 text-[#D4AF37]">
+                    <FiZap size={18} />
+                    <span className="font-semibold text-white">Instant access</span>
+                  </div>
+                  <p className="text-sm">Get booked quickly and start planning your next luxury visit immediately.</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div className="order-1 rounded-[1.75rem] border border-white/15 bg-white/10 p-8 shadow-[0_25px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl lg:order-2" variants={cardVariants} initial="hidden" animate="visible">
+              <div className="mb-8 text-center lg:text-left">
+                <h1 className="text-3xl font-semibold text-white sm:text-4xl">Create Account</h1>
+                <p className="mt-3 text-slate-300">Join now to save favorites, book faster, and receive VIP salon updates.</p>
+              </div>
+
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
+                  <label className="block text-sm font-semibold text-slate-200">Full Name</label>
+                  <div className="flex items-center gap-3 rounded-[1rem] border border-white/15 bg-black/40 px-4 py-3 shadow-inner shadow-black/20">
+                    <FiUser className="text-[#D4AF37]" size={18} />
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                      placeholder="Alex Morgan"
+                    />
+                  </div>
+                  {errors.fullName && <p className="flex items-center gap-1 text-xs text-red-400"><HiExclamationCircle size={14} /> {errors.fullName}</p>}
+                </motion.div>
+
+                <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.25 }}>
+                  <label className="block text-sm font-semibold text-slate-200">Username</label>
+                  <div className="flex items-center gap-3 rounded-[1rem] border border-white/15 bg-black/40 px-4 py-3 shadow-inner shadow-black/20">
+                    <FiUser className="text-[#D4AF37]" size={18} />
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                      placeholder="alex.morgan"
+                    />
+                  </div>
+                  {errors.username && <p className="flex items-center gap-1 text-xs text-red-400"><HiExclamationCircle size={14} /> {errors.username}</p>}
+                </motion.div>
+
+                <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.3 }}>
+                  <label className="block text-sm font-semibold text-slate-200">Email Address</label>
+                  <div className="flex items-center gap-3 rounded-[1rem] border border-white/15 bg-black/40 px-4 py-3 shadow-inner shadow-black/20">
+                    <FiMail className="text-[#D4AF37]" size={18} />
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                      placeholder="alex@example.com"
+                    />
+                  </div>
+                  {errors.email && <p className="flex items-center gap-1 text-xs text-red-400"><HiExclamationCircle size={14} /> {errors.email}</p>}
+                </motion.div>
+
+                <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.35 }}>
+                  <label className="block text-sm font-semibold text-slate-200">Password</label>
+                  <div className="flex items-center gap-3 rounded-[1rem] border border-white/15 bg-black/40 px-4 py-3 shadow-inner shadow-black/20">
+                    <FiLock className="text-[#D4AF37]" size={18} />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                      placeholder="Create a strong password"
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="ml-2 text-slate-300 transition hover:text-white" aria-label="Toggle password visibility">
+                      {showPassword ? <FiEyeOff size={18} /> : <HiEye size={18} />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="flex items-center gap-1 text-xs text-red-400"><HiExclamationCircle size={14} /> {errors.password}</p>}
+                  {formData.password && (
+                    <div className="mt-2">
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="text-xs text-slate-400">Password strength</span>
+                        <span className={`text-xs font-semibold ${strengthLabelColors[passwordStrength] || ''}`}>{strengthLabels[passwordStrength] || 'Enter password'}</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                        <div className={`h-full transition-all duration-300 ${['bg-red-500/60', 'bg-orange-500/60', 'bg-yellow-500/60', 'bg-green-500/60'][passwordStrength] || ''}`} style={{ width: `${((passwordStrength + 1) / 4) * 100}%` }} />
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+
+                <motion.div className="space-y-2" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.4 }}>
+                  <label className="block text-sm font-semibold text-slate-200">Confirm Password</label>
+                  <div className="flex items-center gap-3 rounded-[1rem] border border-white/15 bg-black/40 px-4 py-3 shadow-inner shadow-black/20">
+                    <FiLock className="text-[#D4AF37]" size={18} />
+                    <input
+                      type={showConfirm ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                      placeholder="Confirm your password"
+                    />
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="ml-2 text-slate-300 transition hover:text-white" aria-label="Toggle confirmation password visibility">
+                      {showConfirm ? <FiEyeOff size={18} /> : <HiEye size={18} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <p className="flex items-center gap-1 text-xs text-red-400"><HiExclamationCircle size={14} /> {errors.confirmPassword}</p>}
+                  {formData.confirmPassword && formData.password === formData.confirmPassword && <p className="flex items-center gap-1 text-xs text-green-400"><HiCheckCircle size={14} /> Passwords match</p>}
+                </motion.div>
+
+                <motion.button type="submit" disabled={loading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-[1rem] bg-gradient-to-r from-[#D4AF37] via-[#F3C75D] to-[#D4AF37] px-6 py-3 text-base font-semibold text-slate-950 shadow-[0_15px_40px_rgba(212,175,55,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(212,175,55,0.45)] disabled:cursor-not-allowed disabled:opacity-60" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.5 }} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  {loading ? <><LoadingSpinner size={18} /><span>Creating account...</span></> : 'Create Account'}
+                </motion.button>
+              </form>
+
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-white/10" />
+                <span className="text-xs uppercase tracking-[0.25em] text-slate-400">Already registered?</span>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+
+              <motion.p className="text-center text-sm text-slate-300" variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.6 }}>
+                Already have an account?{' '}
+                <Link to="/auth/login" className="font-semibold text-[#D4AF37] hover:text-white">Sign in</Link>
+              </motion.p>
+            </motion.div>
+          </div>
+        </div>
       </div>
     </motion.div>
   )

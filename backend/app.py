@@ -15,6 +15,7 @@ from routes.customer import customer_bp
 from routes.admin import admin_bp
 from routes.staff import staff_bp
 from routes.services import services_bp
+from routes import appointments as appointments_routes
 from routes.appointments import appointments_bp
 from routes.inventory import inventory_bp
 from routes.payments import payments_bp
@@ -69,6 +70,7 @@ def create_app():
     socketio.init_app(app)
 
     limiter.exempt(auth_bp)
+    limiter.exempt(appointments_routes.manage_appointments)
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(customer_bp, url_prefix='/api/customer')

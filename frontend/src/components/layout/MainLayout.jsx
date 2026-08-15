@@ -1,6 +1,9 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../../features/auth/authSlice'
+import ThemeSwitcher from '../ui/ThemeSwitcher'
+import LanguageSwitcher from '../ui/LanguageSwitcher'
+import api from '../../services/api'
 
 function MainLayout() {
   const dispatch = useDispatch()
@@ -8,7 +11,12 @@ function MainLayout() {
   const auth = useSelector((state) => state.auth)
   const role = auth.user?.role || 'customer'
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch (err) {
+      // ignore logout network errors, continue clearing local state
+    }
     localStorage.removeItem('salon_access')
     localStorage.removeItem('salon_refresh')
     localStorage.removeItem('salon_token')
@@ -44,6 +52,8 @@ function MainLayout() {
             {role === 'staff' && (
               <Link to="/staff/assigned" className="hover:text-slate-900">Assigned</Link>
             )}
+            <ThemeSwitcher />
+            <LanguageSwitcher />
             <button onClick={handleLogout} className="rounded-full bg-slate-100 px-4 py-2 text-slate-600 hover:bg-slate-200">
               Logout
             </button>

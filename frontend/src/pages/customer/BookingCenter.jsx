@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 import { useToast } from '../../components/ui/Toast'
+import { createServiceImageUrl } from '../../utils/imageUtils'
 
 function BookingCenter() {
   const auth = useSelector((state) => state.auth)
@@ -118,7 +119,7 @@ function BookingCenter() {
                   <div className="mb-4 h-40 overflow-hidden rounded-3xl bg-slate-800">
                     {/* Add salon image here */}
                     {service.image_url ? (
-                      <img src={service.image_url} alt={service.name} className="h-full w-full object-cover" />
+                      <img src={createServiceImageUrl(service)} alt={service.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-slate-500">Image placeholder</div>
                     )}

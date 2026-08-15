@@ -1,6 +1,26 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+// Prefer an explicit API URL when configured, otherwise use a same-origin path.
+// This lets the app work from mobile browsers and local network devices without hard-coding localhost.
+function normalizeApiBaseUrl(value) {
+  if (!value) return '/api'
+
+  const trimmed = value.trim()
+  if (!trimmed) return '/api'
+
+  const lower = trimmed.toLowerCase()
+  if (lower.includes('localhost') || lower.includes('127.0.0.1') || lower.includes('0.0.0.0')) {
+    return '/api'
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed.replace(/\/+$/, '')
+  }
+
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed.replace(/^\/+/, '')}`
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '')
 const ACCESS_TOKEN_KEY = 'salon_access'
 const REFRESH_TOKEN_KEY = 'salon_refresh'
 const LEGACY_TOKEN_KEY = 'salon_token'
@@ -25,7 +45,7 @@ const api = axios.create({
   withCredentials: true,
 })
 
-// attach access token to requests
+// attach access token to requests when available
 api.interceptors.request.use((config) => {
   const token = getStoredAccessToken()
   if (token && config.headers) {
@@ -54,10 +74,6 @@ api.interceptors.response.use(undefined, async (error) => {
   if (error.response && error.response.status === 401 && !originalRequest._retry) {
     originalRequest._retry = true
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
-    if (!refreshToken) {
-      // no refresh token, give up
-      return Promise.reject(error)
-    }
 
     if (isRefreshing) {
       return new Promise(function (resolve, reject) {
@@ -72,9 +88,10 @@ api.interceptors.response.use(undefined, async (error) => {
 
     isRefreshing = true
     try {
-      const resp = await axios.post(API_BASE_URL + '/auth/refresh', {}, {
-        headers: { Authorization: `Bearer ${refreshToken}` },
-      })
+      const refreshConfig = refreshToken
+        ? { headers: { Authorization: `Bearer ${refreshToken}` }, withCredentials: true }
+        : { withCredentials: true }
+      const resp = await axios.post(API_BASE_URL + '/auth/refresh', {}, refreshConfig)
       const newAccess = resp.data.access_token
       setStoredAccessToken(newAccess)
       processQueue(null, newAccess)

@@ -5,6 +5,8 @@ import { Provider, useDispatch, useSelector } from 'react-redux'
 import store from './app/store'
 import api from './services/api'
 import MainLayout from './components/layout/MainLayout'
+import ThemeProvider from './providers/ThemeProvider'
+import LanguageProvider from './providers/LanguageProvider'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
@@ -22,6 +24,7 @@ import StaffManagement from './pages/admin/StaffManagement'
 import CustomerManagement from './pages/admin/CustomerManagement'
 import CustomerProfile from './pages/customer/Profile'
 import BookingCenter from './pages/customer/BookingCenter'
+import ReviewsPage from './pages/customer/ReviewsPage'
 import AssignedAppointments from './pages/staff/AssignedAppointments'
 import StaffProfile from './pages/staff/Profile'
 import RoleProtected from './routes/RoleProtected'
@@ -66,6 +69,8 @@ function AppContent() {
           <Route path="auth/reset-password" element={<ResetPassword />} />
           <Route path="auth/verify" element={<VerifyEmail />} />
 
+          <Route path="reviews" element={<ReviewsPage />} />
+
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route path="dashboard/customer" element={<RoleProtected roles={[ 'customer' ]}><CustomerDashboard /></RoleProtected>} />
             <Route path="dashboard/admin" element={<RoleProtected roles={[ 'admin' ]}><AdminDashboard /></RoleProtected>} />
@@ -95,7 +100,11 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <ThemeProvider>
+          <LanguageProvider>
+            <AppContent />
+          </LanguageProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </Provider>
   )

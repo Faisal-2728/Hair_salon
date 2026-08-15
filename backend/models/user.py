@@ -5,6 +5,12 @@ from config.database import db
 
 class User(db.Model):
     __tablename__ = 'users'
+    __table_args__ = (
+        db.Index('idx_user_email', 'email'),
+        db.Index('idx_user_username', 'username'),
+        db.Index('idx_user_role', 'role'),
+        db.Index('idx_user_verified', 'verified'),
+    )
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(140), unique=True, nullable=False)
@@ -21,6 +27,8 @@ class User(db.Model):
     password_reset_code = db.Column(db.String(6), nullable=True)
     email_verification_otp = db.Column(db.String(6), nullable=True)
     email_otp_expires = db.Column(db.DateTime, nullable=True)
+    login_attempts = db.Column(db.Integer, default=0)  # For brute force protection
+    locked_until = db.Column(db.DateTime, nullable=True)  # Account lockout timestamp
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -30,7 +38,13 @@ class User(db.Model):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        # Safely handle missing or malformed password hash
+        try:
+            if not self.password_hash:
+                return False
+            return check_password_hash(self.password_hash, password)
+        except Exception:
+            return False
 
     def generate_reset_token(self, expires_in: int = 3600) -> str:
         token = secrets.token_urlsafe(32)

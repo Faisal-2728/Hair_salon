@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../../services/api'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { formatCurrency } from '../../utils/currencyUtils'
 
 function AnalyticsDashboard() {
   const [stats, setStats] = useState(null)
@@ -25,7 +26,7 @@ function AnalyticsDashboard() {
   if (loading) return <div className="p-6"><LoadingSpinner /></div>
 
   const statCards = [
-    { label: 'Total Revenue', value: `$${(stats?.revenue || 0).toFixed(2)}`, color: 'bg-emerald-50', textColor: 'text-emerald-700', icon: '💰' },
+    { label: 'Total Revenue', value: formatCurrency(stats?.revenue || 0), color: 'bg-emerald-50', textColor: 'text-emerald-700', icon: '💰' },
     { label: 'New Customers', value: reports?.new_customers_month || 0, color: 'bg-blue-50', textColor: 'text-blue-700', icon: '👥' },
     { label: 'Total Appointments', value: stats?.appointments_total || 0, color: 'bg-violet-50', textColor: 'text-violet-700', icon: '📅' },
     { label: 'Completed', value: reports?.appointments_by_status?.completed || 0, color: 'bg-emerald-50', textColor: 'text-emerald-700', icon: '✅' },
@@ -145,7 +146,7 @@ function AnalyticsDashboard() {
                       style={{ width: `${(revenue / Math.max(...Object.values(reports.revenue_by_month), 1)) * 100}%` }}
                     />
                   </div>
-                  <span className="font-bold text-emerald-700 w-20 text-right">${revenue.toFixed(2)}</span>
+                  <span className="font-bold text-emerald-700 w-20 text-right">{formatCurrency(revenue)}</span>
                 </div>
               </div>
             ))}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import api from '../../services/api'
 import { useToast } from '../../components/ui/Toast'
+import { createServiceImageUrl } from '../../utils/imageUtils'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { formatCurrency } from '../../utils/currencyUtils'
 
 const defaultForm = { name: '', category: '', price: '', duration_minutes: '', description: '', active: true }
 
@@ -16,8 +18,8 @@ function ServiceManagement() {
   const { showToast } = useToast()
 
   const loadServices = () => {
-    api.get('/services')
-      .then((response) => setServices(response.data.services))
+    api.get('/services', { params: { include_inactive: true } })
+      .then((response) => setServices(response.data.services || []))
       .catch(() => setServices([]))
   }
 
@@ -128,13 +130,13 @@ function ServiceManagement() {
                     <div>
                       <h4 className="font-semibold">{service.name}</h4>
                       <p className="text-sm text-slate-600">{service.category || 'General'}</p>
-                      <p className="mt-2 text-slate-800">${service.price?.toFixed(2) || '0.00'} • {service.duration_minutes} min</p>
+                      <p className="mt-2 text-slate-800">{formatCurrency(Number(service.price) || 0)} • {service.duration_minutes} min</p>
                       <p className="mt-2 text-sm text-slate-500">{service.description}</p>
                       <p className="mt-2 text-sm text-slate-500">Status: {service.active ? 'Active' : 'Inactive'}</p>
                     </div>
                     {service.image_url && (
                       <div className="h-24 w-24 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                        <img src={service.image_url} alt={service.name} className="h-full w-full object-cover" />
+                        <img src={createServiceImageUrl(service)} alt={service.name} className="h-full w-full object-cover" />
                       </div>
                     )}
                     <div className="flex flex-wrap gap-2">

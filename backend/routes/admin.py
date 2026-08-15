@@ -209,14 +209,24 @@ def assign_appointment(appointment_id):
     if not staff:
         return jsonify({'error': 'Staff member not found'}), 404
 
-    conflict = Appointment.query.filter(
+    # Prevent overlapping staff assignments based on service duration
+    new_service = appointment.service or Service.query.get(appointment.service_id)
+    new_duration = new_service.duration_minutes if new_service else 0
+    new_end_time = appointment.appointment_time + timedelta(minutes=new_duration)
+
+    staff_conflicts = Appointment.query.filter(
         Appointment.staff_id == staff_id,
-        Appointment.appointment_time == appointment.appointment_time,
         Appointment.status != 'cancelled',
         Appointment.id != appointment.id,
-    ).first()
-    if conflict:
-        return jsonify({'error': 'This staff member is already assigned to another appointment at the same time'}), 400
+        Appointment.appointment_time < new_end_time,
+    ).all()
+
+    for existing in staff_conflicts:
+        existing_service = existing.service or Service.query.get(existing.service_id)
+        existing_duration = existing_service.duration_minutes if existing_service else 0
+        existing_end = existing.appointment_time + timedelta(minutes=existing_duration)
+        if appointment.appointment_time < existing_end:
+            return jsonify({'error': 'This staff member is already assigned to another appointment during this time'}), 400
 
     appointment.staff_id = staff_id
     db.session.commit()

@@ -3,6 +3,10 @@ from config.database import db
 
 class Service(db.Model):
     __tablename__ = 'services'
+    __table_args__ = (
+        db.Index('idx_service_active', 'active'),
+        db.Index('idx_service_category', 'category'),
+    )
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(140), nullable=False)
     category = db.Column(db.String(120), nullable=True)

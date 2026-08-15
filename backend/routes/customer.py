@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
 from config.database import db
 from models.appointment import Appointment
@@ -70,9 +70,9 @@ def book_appointment():
     if len(services) != len(service_ids):
         return jsonify({'error': 'One or more selected services are invalid'}), 400
 
-    existing_conflict = Appointment.query.filter_by(customer_id=identity['id'], appointment_time=appointment_time).filter(Appointment.status != 'cancelled').first()
-    if existing_conflict:
-        return jsonify({'error': 'You already have an appointment at that time'}), 400
+    conflict = _check_customer_conflict(identity['id'], appointment_time, service_ids=service_ids)
+    if conflict:
+        return jsonify({'error': conflict}), 400
 
     created = []
     try:
@@ -116,9 +116,10 @@ def reschedule_appointment():
     if new_time <= datetime.utcnow():
         return jsonify({'error': 'Appointment time must be in the future'}), 400
 
-    existing_conflict = Appointment.query.filter_by(customer_id=identity['id'], appointment_time=new_time).filter(Appointment.status != 'cancelled').filter(Appointment.id != appointment.id).first()
-    if existing_conflict:
-        return jsonify({'error': 'You already have another appointment at that time'}), 400
+    service_ids = [appointment.service_id]
+    conflict = _check_customer_conflict(identity['id'], new_time, service_ids=service_ids, ignore_id=appointment.id)
+    if conflict:
+        return jsonify({'error': conflict}), 400
 
     appointment.appointment_time = new_time
     appointment.status = 'rescheduled'
@@ -177,6 +178,28 @@ def reviews():
     db.session.add(review)
     db.session.commit()
     return jsonify({'message': 'Review created successfully', 'review': review.to_dict()}), 201
+
+
+def _check_customer_conflict(customer_id, appointment_time, service_ids=None, ignore_id=None):
+    filters = [Appointment.customer_id == customer_id, Appointment.status != 'cancelled']
+    if ignore_id:
+        filters.append(Appointment.id != ignore_id)
+
+    total_duration_minutes = 0
+    if service_ids:
+        services = Service.query.filter(Service.id.in_(service_ids)).all()
+        total_duration_minutes = sum(s.duration_minutes for s in services)
+
+    end_time = appointment_time + timedelta(minutes=total_duration_minutes)
+
+    existing_appointments = Appointment.query.filter(*filters, Appointment.appointment_time < end_time).all()
+    for existing in existing_appointments:
+        existing_service = existing.service or Service.query.get(existing.service_id)
+        existing_duration = existing_service.duration_minutes if existing_service else 0
+        existing_end = existing.appointment_time + timedelta(minutes=existing_duration)
+        if appointment_time < existing_end:
+            return 'You already have an appointment during this time period'
+    return None
 
 
 @customer_bp.route('/loyalty', methods=['GET'])

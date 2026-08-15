@@ -74,6 +74,11 @@ class Config:
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'change-me').strip() or 'change-me'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=6)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    JWT_TOKEN_LOCATION = ['headers', 'cookies']
+    JWT_COOKIE_SECURE = False
+    JWT_COOKIE_HTTPONLY = True
+    JWT_COOKIE_SAMESITE = 'Lax'
+    JWT_COOKIE_CSRF_PROTECT = False
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com').strip()
     MAIL_PORT = int(os.getenv('MAIL_PORT', 587))
     MAIL_USERNAME = os.getenv('MAIL_USERNAME', '').strip()
@@ -83,5 +88,13 @@ class Config:
     MAIL_DEFAULT_SENDER = (os.getenv('MAIL_DEFAULT_SENDER') or os.getenv('MAIL_USERNAME') or 'no-reply@salonapp.local').strip()
     MAIL_DEBUG = _env_flag('MAIL_DEBUG', False)
     MAIL_SUPPRESS_SEND = _env_flag('MAIL_SUPPRESS_SEND', False)
-    CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*').split(',')
+    # Allow local development from desktop and mobile devices on the LAN.
+    # When no explicit CORS origins are provided, allow all origins so Vite and mobile browsers
+    # can reach the API without failing on preflight or same-origin restrictions.
+    cors_origins_value = os.getenv('CORS_ORIGINS', '').strip()
+    if cors_origins_value:
+        CORS_ORIGINS = [origin.strip() for origin in cors_origins_value.split(',') if origin.strip()]
+    else:
+        CORS_ORIGINS = ['*']
+
     FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173').strip()

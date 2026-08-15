@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import api from '../../services/api'
 import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import { formatCurrency, formatCurrencyAbbreviated } from '../../utils/currencyUtils'
+import { HiUsers, HiCalendarDays, HiCurrencyDollar, HiUserGroup, HiSparkles } from 'react-icons/hi2'
 
 function AdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -27,11 +30,38 @@ function AdminDashboard() {
   if (loading) return <div className="p-6"><LoadingSpinner /></div>
 
   const statCards = [
-    { label: 'Revenue', value: `$${(stats?.revenue || 0).toFixed(2)}`, color: 'bg-emerald-50', textColor: 'text-emerald-700' },
-    { label: 'Customers', value: stats?.customer_count || 0, color: 'bg-blue-50', textColor: 'text-blue-700' },
-    { label: 'Total Appointments', value: stats?.appointments_total || 0, color: 'bg-violet-50', textColor: 'text-violet-700' },
-    { label: 'Staff Members', value: stats?.staff_count || 0, color: 'bg-orange-50', textColor: 'text-orange-700' },
-    { label: 'Branches', value: stats?.active_branches || 0, color: 'bg-pink-50', textColor: 'text-pink-700' },
+    { 
+      label: 'Total Revenue', 
+      value: formatCurrencyAbbreviated(stats?.revenue || 0), 
+      icon: HiCurrencyDollar,
+      color: 'from-emerald-500 to-emerald-600',
+      lightColor: 'bg-emerald-50',
+      textColor: 'text-emerald-700'
+    },
+    { 
+      label: 'Total Customers', 
+      value: stats?.customer_count || 0,
+      icon: HiUsers,
+      color: 'from-blue-500 to-blue-600',
+      lightColor: 'bg-blue-50',
+      textColor: 'text-blue-700'
+    },
+    { 
+      label: 'Total Appointments', 
+      value: stats?.appointments_total || 0,
+      icon: HiCalendarDays,
+      color: 'from-violet-500 to-violet-600',
+      lightColor: 'bg-violet-50',
+      textColor: 'text-violet-700'
+    },
+    { 
+      label: 'Staff Members', 
+      value: stats?.staff_count || 0,
+      icon: HiUserGroup,
+      color: 'from-orange-500 to-orange-600',
+      lightColor: 'bg-orange-50',
+      textColor: 'text-orange-700'
+    },
   ]
 
   return (
@@ -43,13 +73,29 @@ function AdminDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {statCards.map((card) => (
-          <div key={card.label} className={`rounded-2xl ${card.color} p-5 shadow-lg hover:shadow-xl transition-shadow`}>
-            <p className="text-xs font-semibold uppercase text-slate-600">{card.label}</p>
-            <p className={`mt-3 text-2xl font-bold ${card.textColor}`}>{card.value}</p>
-          </div>
-        ))}
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((card, index) => {
+          const Icon = card.icon
+          return (
+            <motion.div
+              key={card.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transition-all border border-gray-100"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-600 tracking-wide">{card.label}</p>
+                  <p className="mt-3 text-2xl font-bold text-gray-900">{card.value}</p>
+                </div>
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${card.color}`}>
+                  <Icon className="text-white text-2xl" />
+                </div>
+              </div>
+            </motion.div>
+          )
+        })}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
